@@ -1,0 +1,12 @@
+STA:
+  enable: true
+  frames: 3
+SFPUs:
+  use: "PU-Net"
+  PU-Net:
+    upsampling_ratio: 4
+  PU-GCN:
+  MPU:
+  PU-GAN:
+data:
+  dyna: "data/dyna_poisson_8192_resampled.h5"
