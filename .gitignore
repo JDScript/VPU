@@ -5,3 +5,6 @@ data/*
 __pycache__/
 *.py[cod]
 *.so
+
+temp/*
+saved_models/*

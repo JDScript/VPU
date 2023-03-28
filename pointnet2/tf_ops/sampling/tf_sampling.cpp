@@ -177,3 +177,6 @@ class GatherPointGradGpuOp: public OpKernel{
 };
 REGISTER_KERNEL_BUILDER(Name("GatherPointGrad").Device(DEVICE_GPU),GatherPointGradGpuOp);
 
+int main() {
+    return 0;
+}

@@ -1,5 +1,4 @@
-from .pointnet_conv2d import PointNetConv2D
+from .pointnet_fp import PointNetFeaturePropagation
 from .pointnet_sa import PointNetSetAbstraction
 
-__all__ = ["PointNetConv2D", "PointNetSetAbstraction"]
-
+__all__ = ["PointNetFeaturePropagation", "PointNetSetAbstraction"]

@@ -34,23 +34,64 @@ class _STAConfig:
         }
 
 
-class _DataSourcesConfig:
+class _DataConfig:
     dyna = "data/dyna_poisson_8192_resampled.h5"
+    pu1k = "data/pu1k.h5"
+    enable_patch = False
+    num_of_patches = 16
+    size_of_dense_patch = 512
+    batch_size = 16
+    prefetch = 10
 
     def __init__(self, cfg_dict=None):
         if not isinstance(cfg_dict, dict):
             return
         if cfg_dict.get("dyna") is not None:
             self.dyna = cfg_dict.get("dyna")
+        if cfg_dict.get("pu1k") is not None:
+            self.pu1k = cfg_dict.get("pu1k")
+        if cfg_dict.get("enable_patch") is not None:
+            self.enable_patch = cfg_dict.get("enable_patch")
+        if cfg_dict.get("num_of_patches") is not None:
+            self.num_of_patches = cfg_dict.get("num_of_patches")
+        if cfg_dict.get("size_of_dense_patch") is not None:
+            self.size_of_dense_patch = cfg_dict.get("size_of_dense_patch")
+        if cfg_dict.get("batch_size") is not None:
+            self.batch_size = cfg_dict.get("batch_size")
+        if cfg_dict.get("prefetch") is not None:
+            self.prefetch = cfg_dict.get("prefetch")
 
     def to_dict(self):
         return {
             "dyna": self.dyna,
+            "pu1k": self.pu1k,
+            "enable_patch": self.enable_patch,
+            "num_of_patches": self.num_of_patches,
+            "size_of_dense_patch": self.size_of_dense_patch,
+            "batch_size": self.batch_size,
+            "prefetch": self.prefetch,
+        }
+
+
+class _PUNetConfig:
+    learning_rate = 0.001
+
+    def __init__(self, cfg_dict):
+        if not isinstance(cfg_dict, dict):
+            return
+        if cfg_dict.get("learning_rate"):
+            self.upsampling_ratio = cfg_dict.get("learning_rate")
+
+    def to_dict(self):
+        return {
+            "learning_rate": self.learning_rate,
         }
 
 
 class _SFPUsConfig:
     use = SFPUs.PU_NET
+    upsampling_ratio = 4
+    PU_Net = _PUNetConfig(None)
 
     def __init__(self, cfg_dict=None):
         if not isinstance(cfg_dict, dict):
@@ -63,10 +104,15 @@ class _SFPUsConfig:
             except ValueError as e:
                 logging.getLogger().error(f"Config Error: {e}, in (\"PU-Net\", \"PU-GCN\", \"MPU\", \"PU-GAN\")")
                 sys.exit()
+        if cfg_dict.get("upsampling_ratio"):
+            self.upsampling_ratio = cfg_dict.get("upsampling_ratio")
+        if cfg_dict.get("PU-Net"):
+            self.PU_Net = _PUNetConfig(cfg_dict.get("PU-Net"))
 
     def to_dict(self):
         return {
             "use": self.use.value,
+            "PU-Net": self.PU_Net.to_dict(),
         }
 
 
@@ -85,7 +131,7 @@ class Config(metaclass=Singleton):
 
         self.STAConfig = _STAConfig(cfg.get("STA"))
         self.SFPUsConfig = _SFPUsConfig(cfg.get("SFPUs"))
-        self.DataSourcesConfig = _DataSourcesConfig(cfg.get("data"))
+        self.DataConfig = _DataConfig(cfg.get("data"))
         return
 
     def print_formatted(self):
@@ -94,7 +140,7 @@ class Config(metaclass=Singleton):
             "VPU Framework Config": {
                 "STA": self.STAConfig.to_dict(),
                 "SFPUs": self.SFPUsConfig.to_dict(),
-                "data": self.DataSourcesConfig.to_dict(),
+                "data": self.DataConfig.to_dict(),
             }
         }
 

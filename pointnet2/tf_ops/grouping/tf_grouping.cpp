@@ -211,4 +211,6 @@ class GroupPointGradGpuOp: public OpKernel{
 };
 REGISTER_KERNEL_BUILDER(Name("GroupPointGrad").Device(DEVICE_GPU),GroupPointGradGpuOp);
 
-
+int main() {
+    return 0;
+}

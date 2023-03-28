@@ -25,7 +25,7 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
     # return grouping_module.query_ball_point(radius, nsample, xyz1, xyz2)
     if np.isscalar(radius):
         radius = tf.expand_dims(tf.constant(radius), axis=0)
-        batch_size = xyz.get_shape()[0].value
+        batch_size = tf.shape(xyz)[0]
         radius = tf.tile(radius, [batch_size])
         idx, pts_cnt = grouping_module.query_ball_point(
             xyz, new_xyz, radius, nsample)
@@ -103,7 +103,7 @@ def find_duplicate_columns(A):
 
 # add a big value to duplicate columns
 def prepare_for_unique_top_k(D, A):
-    indices_duplicated = tf.py_func(find_duplicate_columns, [A], tf.int32)
+    indices_duplicated = tf.numpy_function(find_duplicate_columns, [A], tf.int32)
     D += tf.reduce_max(D) * tf.cast(indices_duplicated, tf.float32)
 
 
@@ -118,7 +118,6 @@ def knn_point_2(k, points, queries, sort=True, unique=True):
     with tf.name_scope("knn_point"):
         batch_size = tf.shape(queries)[0]
         point_num = tf.shape(queries)[1]
-
         D = batch_distance_matrix_general(queries, points)
         if unique:
             prepare_for_unique_top_k(D, points)

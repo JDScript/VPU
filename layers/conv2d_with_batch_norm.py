@@ -1,15 +1,11 @@
 import tensorflow as tf
 
 
-class PointNetConv2D(tf.keras.layers.Layer):
+@tf.keras.utils.register_keras_serializable()
+class Conv2DWithBatchNorm(tf.keras.layers.Layer):
     """
-    PointNet Conv2D implemented as tf.keras.layers.Layer
-
     It's actually a tf.keras.layers.Conv2D with the option to add
     tf.keras.layers.BatchNormalization after convolution
-
-    However, we have to inherit tf.keras.layers.Layer, so we have
-    to use lower level api tf.nn.conv2d
     """
 
     def __init__(
@@ -25,7 +21,7 @@ class PointNetConv2D(tf.keras.layers.Layer):
         batch_norm_decay=0.00001,
         **kwargs,
     ):
-        super(PointNetConv2D, self).__init__(**kwargs)
+        super(Conv2DWithBatchNorm, self).__init__(**kwargs)
 
         self.filters = filters
         self.kernel_size = kernel_size
@@ -71,8 +67,6 @@ class PointNetConv2D(tf.keras.layers.Layer):
                 renorm=False,
             )
 
-            tf.keras.layers.MaxPooling2D
-
         self.built = True
 
     def call(self, inputs):
@@ -96,13 +90,17 @@ class PointNetConv2D(tf.keras.layers.Layer):
 
         return outputs
 
-    def compute_output_shape(self, input_shape):
-        input_height, input_width, input_channels = input_shape[1:]
-        kernel_height, kernel_width = self.kernel_size
-        stride_height, stride_width = self.stride
-        padding_height, padding_width = self.padding
+    def get_config(self):
+        config = super().get_config()
+        config["filters"] = self.filters
+        config["kernel_size"] = self.kernel_size
+        config["strides"] = self.strides
+        config["padding"] = self.padding
+        config["initializer"] = self.initializer
+        config["activation"] = self.activation
+        config["weight_decay"] = self.weight_decay
+        config["use_batch_normalization"] = self.use_batch_normalization
+        config["batch_norm_decay"] = self.batch_norm_decay
 
-        output_height = int((input_height - kernel_height + 2 * padding_height) / stride_height + 1)
-        output_width = int((input_width - kernel_width + 2 * padding_width) / stride_width + 1)
+        return config
 
-        return input_shape[0], output_height, output_width, self.filters

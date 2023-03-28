@@ -2,15 +2,13 @@ import tensorflow as tf
 import numpy as np
 from ..tf_ops.sampling.tf_sampling import farthest_point_sample, gather_point
 from ..tf_ops.grouping.tf_grouping import query_ball_point, group_point, knn_point
-from ..tf_ops.interpolation.tf_interpolate import three_nn, three_interpolate
-from pointnet_conv2d import PointNetConv2D
+from layers.conv2d_with_batch_norm import Conv2DWithBatchNorm
 
 
+@tf.keras.utils.register_keras_serializable()
 class PointNetSetAbstraction(tf.keras.layers.Layer):
     """
     PointNet Set Abstraction Module implemented as tf.keras.layers.Layer
-
-    It is not trainable, so won't implement build method.
     """
 
     def __init__(
@@ -18,15 +16,17 @@ class PointNetSetAbstraction(tf.keras.layers.Layer):
         num_of_fps_points: int,
         radius: float,
         num_of_local_points: int,
-        mlp_output_shape_each_point: list[int],
-        mlp_output_shape_each_region: list[int] | None = None,
+        mlp_output_shape_each_point: tuple[int],
+        mlp_output_shape_each_region: tuple[int] | None = None,
         group_all=False,
         use_batch_normalization=True,
         batch_norm_decay=0.00001,
         pooling="max",
         knn=False,
         use_xyz=True,
+        **kwargs
     ):
+        super(PointNetSetAbstraction, self).__init__(**kwargs)
         self.num_of_fps_points = num_of_fps_points
         self.radius = radius
         self.num_of_local_points = num_of_local_points
@@ -38,9 +38,42 @@ class PointNetSetAbstraction(tf.keras.layers.Layer):
         self.pooling = pooling
         self.knn = knn
         self.use_xyz = use_xyz
-        return
 
-    def call(self, xyz, points, training=True):
+        # Init layers
+        self.mlp_layers_each_point = []
+        self.mlp_layers_each_region = []
+
+    def build(self, input_shape):
+        self.mlp_layers_each_point = [
+            Conv2DWithBatchNorm(
+                num_out_channel,
+                (1, 1),
+                padding="VALID",
+                use_batch_normalization=self.use_batch_normalization,
+                batch_norm_decay=self.batch_norm_decay,
+                strides=(1, 1),
+                name=f"MLP_each_point_{i}"
+            )
+            for i, num_out_channel in enumerate(self.mlp_output_shape_each_point)
+        ]
+
+        if self.mlp_output_shape_each_region is not None:
+            self.mlp_layers_each_region = [
+                Conv2DWithBatchNorm(
+                    num_out_channel,
+                    (1, 1),
+                    padding='VALID',
+                    use_batch_normalization=self.use_batch_normalization,
+                    batch_norm_decay=self.batch_norm_decay,
+                    strides=(1, 1),
+                    name=f"MLP_each_region_{i}"
+                )
+                for i, num_out_channel in enumerate(self.mlp_output_shape_each_region)
+            ]
+        super().build(input_shape=input_shape)
+
+    def call(self, inputs, training=True):
+        xyz, points = inputs
 
         if self.group_all:
             self.num_of_local_points = xyz.shape[1]
@@ -60,15 +93,8 @@ class PointNetSetAbstraction(tf.keras.layers.Layer):
             self.mlp_output_shape_each_region = []
 
         # Point Feature Embedding
-        for i, num_out_channel in enumerate(self.mlp_output_shape_each_point):
-            new_points = PointNetConv2D(
-                num_out_channel,
-                (1, 1),
-                padding="VALID",
-                use_batch_normalization=self.use_batch_normalization,
-                batch_norm_decay=self.batch_norm_decay,
-                strides=(1, 1)
-            )(new_points)
+        for layer in self.mlp_layers_each_point:
+            new_points = layer(new_points)
 
         # Pooling in Local Regions
         if self.pooling == "max":
@@ -86,19 +112,27 @@ class PointNetSetAbstraction(tf.keras.layers.Layer):
             new_points *= weights  # (batch_size, npoint, nsample, mlp[-1])
             new_points = tf.reduce_sum(new_points, axis=2, keepdims=True)
 
-        if self.mlp_output_shape_each_region is not None:
-            for i, num_out_channel in enumerate(self.mlp_output_shape_each_region):
-                new_points = PointNetConv2D(
-                    num_out_channel,
-                    (1, 1),
-                    padding='VALID',
-                    use_batch_normalization=self.use_batch_normalization,
-                    batch_norm_decay=self.batch_norm_decay,
-                    strides=(1, 1)
-                )(new_points)
+        for layer in self.mlp_layers_each_region:
+            new_points = layer(new_points)
 
         new_points = tf.squeeze(new_points, axis=[2])
         return new_xyz, new_points, idx
+
+    def get_config(self):
+        config = super().get_config()
+        config["num_of_fps_points"] = self.num_of_fps_points
+        config["radius"] = self.radius
+        config["num_of_local_points"] = self.num_of_local_points
+        config["mlp_output_shape_each_point"] = self.mlp_output_shape_each_point
+        config["mlp_output_shape_each_region"] = self.mlp_output_shape_each_region
+        config["group_all"] = self.group_all
+        config["use_batch_normalization"] = self.use_batch_normalization
+        config["batch_norm_decay"] = self.batch_norm_decay
+        config["pooling"] = self.pooling
+        config["knn"] = self.knn
+        config["use_xyz"] = self.use_xyz
+
+        return config
 
 
 # Method copied from PointNet++
