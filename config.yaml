@@ -1,5 +1,5 @@
 STA:
-  enable: true
+  enable: false
   frames: 3
 SFPUs:
   use: "PU-Net"
@@ -12,7 +12,7 @@ SFPUs:
 data:
   dyna: "data/dyna_poisson_8192_resampled.h5"
   pu1k: "data/pu1k.h5"
-  enable_patch: false
+  enable_patch: true
   num_of_patches: 16
   size_of_dense_patch: 512
   batch_size: 16

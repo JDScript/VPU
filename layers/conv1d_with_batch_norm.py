@@ -57,11 +57,11 @@ class Conv1DWithBatchNorm(tf.keras.layers.Layer):
 
         self.built = True
 
-    def call(self, inputs):
-        outputs = self.conv_layer(inputs)
+    def call(self, inputs, **kwargs):
+        outputs = self.conv_layer(inputs, **kwargs)
 
         if self.norm_layer is not None:
-            outputs = self.norm_layer(outputs)
+            outputs = self.norm_layer(outputs, **kwargs)
 
         if self.activation is not None:
             outputs = self.activation(outputs)

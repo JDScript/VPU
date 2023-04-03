@@ -69,7 +69,7 @@ class Conv2DWithBatchNorm(tf.keras.layers.Layer):
 
         self.built = True
 
-    def call(self, inputs):
+    def call(self, inputs, **kwargs):
         outputs = tf.nn.conv2d(
             inputs,
             filters=self.kernel,
@@ -83,7 +83,7 @@ class Conv2DWithBatchNorm(tf.keras.layers.Layer):
         )
 
         if self.batch_norm is not None:
-            outputs = self.batch_norm(outputs)
+            outputs = self.batch_norm(outputs, **kwargs)
 
         if self.activation is not None:
             outputs = self.activation(outputs)

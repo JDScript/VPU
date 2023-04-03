@@ -1,4 +1,5 @@
 import tensorflow as tf
+from sta.module import STAModule
 from layers import Conv1DWithBatchNorm, Conv2DWithBatchNorm, DenseConv
 
 
@@ -11,6 +12,7 @@ class FeatureExtractionMPU(tf.keras.layers.Layer):
         knn=16,
         use_batch_normalization=False,
         batch_norm_decay=0.00001,
+        sta_module: STAModule | None = None,
         **kwargs,
     ):
         super(FeatureExtractionMPU, self).__init__(**kwargs)
@@ -19,6 +21,7 @@ class FeatureExtractionMPU(tf.keras.layers.Layer):
         self.knn = knn
         self.use_batch_normalization = use_batch_normalization
         self.batch_norm_decay = batch_norm_decay
+        self.sta_module = sta_module
 
         self.layer0 = None
         self.layer1_dense_conv = None
@@ -30,9 +33,12 @@ class FeatureExtractionMPU(tf.keras.layers.Layer):
         self.layer4_dense_conv = None
 
     def call(self, inputs, *args, **kwargs):
-        l0_features = tf.expand_dims(inputs, axis=2)
-        l0_features = self.layer0(l0_features)
-        l0_features = tf.squeeze(l0_features, axis=2)
+        if self.sta_module is None:
+            l0_features = tf.expand_dims(inputs, axis=2)
+            l0_features = self.layer0(l0_features)
+            l0_features = tf.squeeze(l0_features, axis=2)
+        else:
+            l0_features = self.sta_module(inputs)
 
         # Encoding
         l1_features = self.layer1_dense_conv(l0_features)

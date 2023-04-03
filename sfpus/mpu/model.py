@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from .layers import FeatureExtractionMPU
 from layers import Conv2DWithBatchNorm
+from sta.module import STAModule
 from utils.loss import EMD
 
 
@@ -13,6 +14,7 @@ class MPU(tf.keras.Model):
         use_batch_normalization=False,
         batch_norm_decay=0.00001,
         up_ratio=4,
+        sta_module: STAModule | None = None,
         **kwargs,
     ):
         super(MPU, self).__init__(**kwargs)
@@ -21,6 +23,7 @@ class MPU(tf.keras.Model):
         self.use_batch_normalization = use_batch_normalization
         self.batch_norm_decay = batch_norm_decay
         self.up_ratio = up_ratio
+        self.sta_module = sta_module
 
         self.expanded_batch_radius = tf.expand_dims(tf.expand_dims(radius, axis=-1), axis=-1)
 
@@ -43,7 +46,10 @@ class MPU(tf.keras.Model):
         return grid
 
     def build(self, input_shape):
-        self.feature_extraction = FeatureExtractionMPU(12)
+        self.feature_extraction = FeatureExtractionMPU(
+            12,
+            sta_module=self.sta_module
+        )
         self.up_layer_1 = Conv2DWithBatchNorm(
             128,
             (1, 1),
@@ -78,7 +84,8 @@ class MPU(tf.keras.Model):
         return
 
     def call(self, inputs, **kwargs):
-        batch_size, num_of_point, _ = self.input_dims
+        batch_size = self.input_dims[0]
+        num_of_point = self.input_dims[-2]
 
         features = self.feature_extraction(inputs)
 
@@ -106,6 +113,10 @@ class MPU(tf.keras.Model):
         new_xyz = self.concat_layer_2(new_xyz)
 
         outputs = tf.squeeze(new_xyz, axis=[2])
+
+        if self.sta_module is not None:
+            inputs = inputs[:, inputs.shape[1] // 2 + 1, :, :]
+
         outputs += tf.reshape(
             tf.tile(
                 tf.expand_dims(inputs, 2),
@@ -127,6 +138,7 @@ class MPU(tf.keras.Model):
         batch_norm_decay=0.00001,
         up_ratio=4,
         learning_rate=0.001,
+        sta_module: STAModule | None = None,
     ) -> 'MPU':
         model = MPU(
             input_dims=input_dims,
@@ -134,6 +146,7 @@ class MPU(tf.keras.Model):
             use_batch_normalization=use_batch_normalization,
             batch_norm_decay=batch_norm_decay,
             up_ratio=up_ratio,
+            sta_module=sta_module,
         )
         model(np.zeros(input_dims))
 
