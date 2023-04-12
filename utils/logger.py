@@ -9,7 +9,7 @@ class _LoggerFormatter(logging.Formatter):
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
 
-    format = "\n%(levelname)-8s %(asctime)s.%(msecs)03d - %(message)s (%(filename)s:%(lineno)d)"
+    format = "%(levelname)-8s %(asctime)s.%(msecs)03d - %(message)s (%(filename)s:%(lineno)d)"
 
     FORMATS = {
         logging.DEBUG: grey + format + reset,

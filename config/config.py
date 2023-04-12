@@ -37,11 +37,12 @@ class _STAConfig:
 class _DataConfig:
     dyna = "data/dyna_poisson_8192_resampled.h5"
     pu1k = "data/pu1k.h5"
-    enable_patch = False
     num_of_patches = 16
     size_of_dense_patch = 512
     batch_size = 16
     prefetch = 10
+    window_stride = 1
+    train_split_ratio = 0.8
 
     def __init__(self, cfg_dict=None):
         if not isinstance(cfg_dict, dict):
@@ -50,8 +51,6 @@ class _DataConfig:
             self.dyna = cfg_dict.get("dyna")
         if cfg_dict.get("pu1k") is not None:
             self.pu1k = cfg_dict.get("pu1k")
-        if cfg_dict.get("enable_patch") is not None:
-            self.enable_patch = cfg_dict.get("enable_patch")
         if cfg_dict.get("num_of_patches") is not None:
             self.num_of_patches = cfg_dict.get("num_of_patches")
         if cfg_dict.get("size_of_dense_patch") is not None:
@@ -60,38 +59,28 @@ class _DataConfig:
             self.batch_size = cfg_dict.get("batch_size")
         if cfg_dict.get("prefetch") is not None:
             self.prefetch = cfg_dict.get("prefetch")
+        if cfg_dict.get("window_stride") is not None:
+            self.window_stride = cfg_dict.get("window_stride")
+        if cfg_dict.get("train_split_ratio") is not None:
+            self.train_split_ratio = cfg_dict.get("train_split_ratio")
 
     def to_dict(self):
         return {
             "dyna": self.dyna,
             "pu1k": self.pu1k,
-            "enable_patch": self.enable_patch,
             "num_of_patches": self.num_of_patches,
             "size_of_dense_patch": self.size_of_dense_patch,
             "batch_size": self.batch_size,
             "prefetch": self.prefetch,
-        }
-
-
-class _PUNetConfig:
-    learning_rate = 0.001
-
-    def __init__(self, cfg_dict):
-        if not isinstance(cfg_dict, dict):
-            return
-        if cfg_dict.get("learning_rate"):
-            self.upsampling_ratio = cfg_dict.get("learning_rate")
-
-    def to_dict(self):
-        return {
-            "learning_rate": self.learning_rate,
+            "window_stride": self.window_stride,
+            "train_split_ratio": self.train_split_ratio,
         }
 
 
 class _SFPUsConfig:
-    use = SFPUs.PU_NET
+    use = SFPUs.MPU
     upsampling_ratio = 4
-    PU_Net = _PUNetConfig(None)
+    learning_rate = 0.001
 
     def __init__(self, cfg_dict=None):
         if not isinstance(cfg_dict, dict):
@@ -106,13 +95,14 @@ class _SFPUsConfig:
                 sys.exit()
         if cfg_dict.get("upsampling_ratio"):
             self.upsampling_ratio = cfg_dict.get("upsampling_ratio")
-        if cfg_dict.get("PU-Net"):
-            self.PU_Net = _PUNetConfig(cfg_dict.get("PU-Net"))
+        if cfg_dict.get("learning_rate"):
+            self.learning_rate = cfg_dict.get("learning_rate")
 
     def to_dict(self):
         return {
             "use": self.use.value,
-            "PU-Net": self.PU_Net.to_dict(),
+            "upsampling_ratio": self.upsampling_ratio,
+            "learning_rate": self.learning_rate,
         }
 
 

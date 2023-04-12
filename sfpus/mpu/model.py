@@ -3,7 +3,7 @@ import numpy as np
 from .layers import FeatureExtractionMPU
 from layers import Conv2DWithBatchNorm
 from sta.module import STAModule
-from utils.loss import EMD
+from utils.loss import EMD, Combined, CD, Repulsion
 
 
 class MPU(tf.keras.Model):
@@ -155,7 +155,10 @@ class MPU(tf.keras.Model):
                 learning_rate=learning_rate,
                 beta_1=0.9
             ),
-            loss=EMD(),
+            loss=Combined(
+                losses=[CD(), Repulsion()],
+                losses_weights=(50, 1),
+            ),
         )
 
         return model

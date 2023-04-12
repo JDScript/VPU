@@ -74,6 +74,7 @@ class STAModule(tf.keras.Model):
 
         super().build(input_shape=input_shape)
 
+    @tf.function
     def call(self, inputs, **kwargs):
         feature_tensors = []
         frames = inputs.shape[1]

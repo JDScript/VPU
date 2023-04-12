@@ -1,19 +1,24 @@
 STA:
+  # Enable Spatial-Temporal Aggregation module or not
   enable: false
+  # Number of frames to be used in sta module, data will be loaded according to this param
   frames: 3
 SFPUs:
-  use: "PU-Net"
+  # Which Single-Frame Point Cloud Upsampling model to use
+  # In (PU-Net, PU-GCN, PU-GAN, MPU)
+  use: "MPU"
   upsampling_ratio: 4
-  PU-Net:
-    learning_rate: 0.001
-  PU-GCN:
-  MPU:
-  PU-GAN:
+  learning_rate: 0.001
 data:
   dyna: "data/dyna_poisson_8192_resampled.h5"
   pu1k: "data/pu1k.h5"
-  enable_patch: true
+  # Number of patches one point cloud to be cropped into
   num_of_patches: 16
+  # Number of points for a dense patch, size of sparse patch will be calculated according to up-sample ratio
   size_of_dense_patch: 512
   batch_size: 16
   prefetch: 5
+  # Since using sliding window to generate group of frames, define the stride of the sliding window
+  window_stride: 3
+  # Configure train test split of dataset
+  train_split_ratio: 0.8
